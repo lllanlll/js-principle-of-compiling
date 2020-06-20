@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>code1</title>
+</head>
+
+<body>
+    <textarea name="cin" id="cin" cols="30" rows="10"></textarea>
+    <br/>
+    <button id="analyze">分析</button>
+    <p></p>
+    <textarea name="cout" id="cout" cols="20" rows="40"></textarea>
+
+    <script>
+        const reserve = []; //保留字
+        reserve[1] = "int";
+        reserve[2] = "float";
+        reserve[3] = "double";
+        reserve[4] = "char";
+        reserve[5] = "main";
+        reserve[6] = "return";
+        reserve[7] = "if";
+        reserve[8] = "else";
+        reserve[9] = "switch";
+        reserve[10] = "case";
+        reserve[11] = "while";
+        reserve[12] = "for";
+        reserve[13] = "do";
+        reserve[14] = "true";
+        reserve[15] = "false";
+        reserve[16] = "new";
+        reserve[17] = "long";
+        reserve[18] = "short";
+        reserve[19] = "typedef";
+        reserve[20] = "unsigned";
+        reserve[21] = "void";
+        reserve[22] = "struct";
+        reserve[23] = "continue";
+
+
+        const operator = [];//运算符
+        operator[24] = "+";
+        operator[25] = "-";
+        operator[26] = "*";
+        operator[27] = "/";
+        operator[28] = "<";
+        operator[29] = "<=";
+        operator[30] = ">";
+        operator[31] = ">=";
+        operator[32] = "!=";
+        operator[33] = "=="; 
+        operator[34] = "=";
+
+        const boundary = [];//界符
+        boundary[35] = "(";
+        boundary[36] = ")";
+        boundary[37] = ",";
+        boundary[38] = ";";
+        boundary[39] = "{";
+        boundary[40] = "}";
+        boundary[41] = "#";
+        
+
+        class Target {
+            constructor(key = null, val = null) {
+                this.key = key;
+                this.val = val;
+            }
+        }
+
+        let result = [];
+        
+        document.querySelector('#analyze').addEventListener('click', function() {
+            result = [];
+            let cin = document.querySelector('#cin').value;
+            handle(cin);
+            sysOut(result);
+        })
+
+        const judgeAlpha = (alpha) => {//判断是否是字母
+            if(alpha >= 'A' && alpha <= 'z') {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        const judgeNum = (num) => {//判断是否是数字
+            var re = /^[0-9]+.?[0-9]*/;
+            if(re.test(num)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        const judgeBoundary = (boun) => {//判断是否是界符
+            return boundary.indexOf(boun);
+        }
+
+        const judgeOperator = (oper) => {//判断是否是运算符
+            return operator.indexOf(oper);
+        }
+
+        const handle = (cin) => { //获得所有单词及符号数组
+            //cin : string
+            //let result = cin.replace(/\s+/g,"");
+            //let len = result.length;
+            let token = '';
+            for(let i = 0; i < cin.length; i++) {
+                if(judgeAlpha(cin[i]) || judgeNum(cin[i]) || cin[i] == '.') {
+                    token += cin[i];
+                }
+                if(judgeBoundary(cin[i]) >= 0 || judgeOperator(cin[i]) >= 0) {
+                    if(token !== '') {
+                        result.push(token);
+                        token = '';
+                    }
+                    result.push(cin[i]);
+                }
+                if(cin[i] == ' ' && token !== ''){
+                    result.push(token);
+                    token = '';
+                }
+            }
+        }
+
+        let sys = [];
+
+        const sysOut = (arr) => {
+            let cout = document.querySelector('#cout');
+            //cout.value = arr;
+            arr.forEach(item => {
+                let x = new Target();
+                if(reserve.indexOf(item) >= 0) {
+                    x.key = reserve.indexOf(item);
+                    x.val = item;
+                } else if(operator.indexOf(item) >= 0) {
+                    x.key = operator.indexOf(item);
+                    x.val = item;
+                } else if(boundary.indexOf(item) >= 0) {
+                    x.key = boundary.indexOf(item);
+                    x.val = item;
+                } else if(judgeAlpha(item)){//字母或数字
+                    x.key = '标识符';
+                    x.val = item;
+                } else if(judgeNum(item)){
+                    if(String(item).indexOf('.') != -1) {
+                        x.key = '浮点型';
+                    } else {
+                        x.key = '整型';
+                    }
+                    x.val = item;
+                }
+                sys.push(x);
+                
+            })
+            let str = '';
+            sys.forEach(item => {
+                str += '<';
+                str += item.key;
+                str += ' , "';
+                str += item.val;
+                str += '">';
+                str += '\n';
+            })
+            cout.value = str;
+        }
+
+
+
+    </script>
+</body>
+
+</html>

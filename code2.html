@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="./table.js"></script>
+</head>
+
+<body>
+
+</body>
+<div id="app">
+    <el-table :data="tableShowData" style="width: 100%" :border=true>
+        <el-table-column prop="step" label="row" width="60">
+        </el-table-column>
+        <el-table-column prop="add" label="+" width="100">
+        </el-table-column>
+        <el-table-column prop="sub" label="-" width="100">
+        </el-table-column>
+        <el-table-column prop="mul" label="*" width="100">
+        </el-table-column>
+        <el-table-column prop="division" label="/" width="100">
+        </el-table-column>
+        <el-table-column prop="topArrow" label="^" width="100">
+        </el-table-column>
+        <el-table-column prop="rightBracket" label=")" width="100">
+        </el-table-column>
+        <el-table-column prop="well" label="#" width="100">
+        </el-table-column>
+        <el-table-column prop="leftBracket" label="(" width="100">
+        </el-table-column>
+        <el-table-column prop="i" label="i" width="100">
+        </el-table-column>
+        <el-table-column prop="E" label="E" width="100">
+        </el-table-column>
+        <el-table-column prop="T" label="T" width="100">
+        </el-table-column>
+        <el-table-column prop="F" label="F" width="100">
+        </el-table-column>
+        <el-table-column prop="P" label="P" width="100">
+        </el-table-column>
+    </el-table>
+    <el-input v-model="input" placeholder="请输入输入串以#结尾"></el-input>
+    <el-button @click="analy">点击进行分析</el-button>
+    <el-table :data="tableData" style="width: 100%" :border=true>
+        <el-table-column prop="step" label="步骤" width="60">
+        </el-table-column>
+        <el-table-column prop="stateStack" label="状态栈" width="120">
+        </el-table-column>
+        <el-table-column prop="signalStack" label="符号栈" width="120">
+        </el-table-column>
+        <el-table-column prop="nowSignal" label="当前符号" width="80">
+        </el-table-column>
+        <el-table-column prop="input" label="输入串" width="200">
+        </el-table-column>
+        <el-table-column prop="explain" label="说明">
+        </el-table-column>
+
+    </el-table>
+</div>
+
+<script>
+    const statuteGrammar = [
+        ['S', 'E'],
+        ['E+T', 'E'],
+        ['E-T', 'E'],
+        ['T', 'E'],
+        ['T*F', 'T'],
+        ['T/F', 'T'],
+        ['F', 'T'],
+        ["P^F", 'F'],
+        ["P", 'F'],
+        ["(E)", 'P'],
+        ["i", 'P']
+    ]
+    //搜索方法:  statuteGrammar["E+T"] => E
+
+    const searchIndex = {
+        '+': 0,
+        '-': 1,
+        '*': 2,
+        '/': 3,
+        '^': 4,
+        ')': 5,
+        '#': 6,
+        '(': 7,
+        'i': 8,
+        'E': 9,
+        'T': 10,
+        'F': 11,
+        'P': 12
+    }
+
+
+    //声明分析表
+    const table = [
+        //   +      -     *     /      ^     )     #     (     i      E  T   F   P
+        /* 0 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "1", "2", "3", "4"],
+        /* 1 */
+        ["s7", "s8", "err", "err", "err", "err", "acc", "err", "err", "err", "err", "err", "err"],
+        /* 2 */
+        ["r3", "r3", "s9", "s10", "err", "r3", "r3", "err", "err", "err", "err", "err", "err"],
+        /* 3 */
+        ["r6", "r6", "r6", "r6", "err", "r6", "r6", "err", "err", "err", "err", "err", "err"],
+        /* 4 */
+        ["r8", "r8", "r8", "r8", "s11", "r8", "r8", "err", "err", "err", "err", "err", "err"],
+        /* 5 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "12", "2", "3", "4"],
+        /* 6 */
+        ["r10", "r10", "r10", "r10", "r10", "r10", "r10", "err", "err", "err", "err", "err", "err"],
+        /* 7 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "err", "13", "3", "4"],
+        /* 8 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "err", "14", "3", "4"],
+        /* 9 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "err", "err", "15", "4"],
+        /* 10 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "err", "err", "16", "4"],
+        /* 11 */
+        ["err", "err", "err", "err", "err", "err", "err", "s5", "s6", "err", "err", "17", "4"],
+        /* 12 */
+        ["s7", "s8", "err", "err", "err", "s18", "err", "err", "err", "err", "err", "err", "err"],
+        /* 13 */
+        ["r1", "r1", "s9", "s10", "err", "r1", "r1", "err", "err", "err", "err", "err", "err"],
+        /* 14 */
+        ["r2", "r2", "s9", "s10", "err", "r2", "r2", "err", "err", "err", "err", "err", "err"],
+        /* 15 */
+        ["r4", "r4", "r4", "r4", "err", "r4", "r4", "err", "err", "err", "err", "err", "err"],
+        /* 16 */
+        ["r5", "r5", "r5", "r5", "err", "r5", "r5", "err", "err", "err", "err", "err", "err"],
+        /* 17 */
+        ["r7", "r7", "r7", "r7", "err", "r7", "r7", "err", "err", "err", "err", "err", "err"],
+        /* 18 */
+        ["r9", "r9", "r9", "r9", "r9", "r9", "r9", "err", "err", "err", "err", "err", "err"]
+    ]
+
+    //定义结构
+    class Stack {
+        constructor(arr = []) {
+            this.arr = arr;
+        }
+        add(val) { //params: String
+            this.arr.push(val);
+        }
+        pop() { //return String
+            return this.arr.pop();
+        }
+        shift() {
+            return this.arr.shift();
+        }
+        showPop() { //return String
+            return this.arr[this.arr.length - 1];
+        }
+        showAll() { //return []
+            let str = [];
+            this.arr.forEach(item => {
+                str.push(item);
+            });
+            return str;
+        }
+        length() {
+            return this.arr.length;
+        }
+        toString() {
+            return this.arr.toString();
+        }
+        isEmpty() { //return bool
+            return this.arr.length == 0 ? true : false;
+        }
+        slice(num) {
+            return this.arr.slice(num);
+        }
+    }
+
+    //需返回的格式return
+    //[ {}, {}... ]
+
+    //其中每项需包含:
+    // {
+    //     步骤num step
+    //     状态栈[] stateStack
+    //     符号栈[] signalStack
+    //     当前符号char nowSignal
+    //     输入串[] input
+    //     说明String explain
+    //     
+    // }
+
+    let step = 0;
+
+    let stateStack = new Stack(); //状态栈
+
+    let signalStack = new Stack(); //符号栈
+
+    let nowSignal = '';
+
+    let explain = '';
+
+    let action = '';
+
+    let output = [];
+
+    //表格元素声明完成
+
+    //声明移进与规约与结束文字
+
+    const shiftIn = (state, signal) => { // params: char char return String
+        return `状态${state}进状态栈 ${signal}进字符栈`;
+    }
+
+    //rNum: r1, type: P-->i
+    const statute = (rNum, type, state, signal) => { // params: String String char char return String
+        return `${rNum}:用${type}规约且状态${state}进状态栈 ${signal}进字符栈`;
+    }
+
+    let obj = {};
+
+    const scan = (input) => {
+        stateStack.add('0');
+        signalStack.add('#');
+
+        // 当前状态
+        let state = '';
+        // 当前字符
+        let nowSignal = '';
+        // 状态栈顶
+        let tempState = '';
+
+        while (true) {
+            obj = {};
+            nowSignal = input[0]; //i
+            tempState = stateStack.showPop(); //0
+            //获取表中的值
+            state = searchTable(nowSignal, tempState);
+
+            step++;
+
+            obj = {
+                step,
+                stateStack: stateStack.showAll(),
+                signalStack: signalStack.showAll(),
+                nowSignal,
+                input,
+                explain,
+            }
+            // output.push(obj);
+
+            if (state == 'err') {
+                output.push('err');
+                break;
+            }
+            if (state == 'acc') {
+                obj.explain = 'acc, 分析成功';
+                output.push(obj);
+                break;
+            }
+            if (state[0] == 's') {
+                let nextState = state.substr(1); //6
+                stateStack.add(nextState); //6
+                signalStack.add(nowSignal); //i
+                obj.explain = shiftIn(nextState, signalStack.showPop());
+                input = input.substr(1);
+            }
+            if (state[0] == 'r') {
+                let index = state.substr(1); //10
+                let production = statuteGrammar[index]; //[i,p]
+                let len = production[0].length; //1
+                for (let i = 0; i < len; i++) {
+                    stateStack.pop();
+                    signalStack.pop();
+                }
+                signalStack.add(production[1]); // #p
+
+                tempState = stateStack.showPop();
+                let nextState = searchTable(production[1], tempState); //4
+                if (state == 'err') {
+                    output.push('err');
+                    break;
+                }
+                stateStack.add(nextState);
+                let type = `${production[1]}-->${production[0]}`;
+                obj.explain = statute(state, type, nextState, production[1]);
+            }
+            output.push(obj);
+            //console.log(stateStack.showPop(), signalStack.showPop());
+        }
+    }
+
+    const searchTable = (nowSignal, tempState) => { //return s11
+        if (tempState < table.length && searchIndex[nowSignal] >= 0) {
+            return table[tempState][searchIndex[nowSignal]];
+        } else {
+            console.log(nowSignal, tempState);
+        }
+
+    }
+
+    //scan(input);
+
+    var vm = new Vue({
+        el: '#app',
+        data: {
+            tableData: output,
+            tableShowData: tableShowData,
+            input: ''
+        },
+        methods: {
+            analy: function() {
+                //output = [];
+                scan(this.input);
+            }
+        }
+    })
+</script>
+
+</html>
